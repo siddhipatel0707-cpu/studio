@@ -1,45 +1,32 @@
 "use client";
 
 import { useEffect } from "react";
-import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { useUser } from "@/firebase";
 import { useRouter } from "next/navigation";
 import { Loader2, Landmark, Wallet, HeartPulse, LineChart } from "lucide-react";
 import { SummaryCard } from "./components/summary-card";
-import type { StoredSimulation } from "@/lib/types";
-import { collection, query, orderBy, limit } from "firebase/firestore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { useSimulationContext } from "./layout";
 
 export default function DashboardPage() {
   const { user, isUserLoading: authLoading } = useUser();
-  const firestore = useFirestore();
+  const { simulationInput, isLoading: isSimLoading } = useSimulationContext();
   const router = useRouter();
 
-  const latestSimQuery = useMemoFirebase(() => {
-    if (!user) return null;
-    return query(
-        collection(firestore, "users", user.uid, "financialSimulations"),
-        orderBy("timestamp", "desc"),
-        limit(1)
-    );
-  }, [firestore, user]);
-
-  const { data: latestSimulations, isLoading: isSimLoading } = useCollection<StoredSimulation>(latestSimQuery);
-  
   useEffect(() => {
     if (!authLoading && !user) {
       router.replace("/");
     }
   }, [user, authLoading, router]);
   
-  const latestSimInputs = latestSimulations?.[0]?.inputs;
-  const monthlyIncome = latestSimInputs?.monthlyIncome || 0;
-  const existingEmis = latestSimInputs?.existingEmis || 0;
-  const currentSavingsCorpus = latestSimInputs?.currentSavingsCorpus || 0;
+  const monthlyIncome = simulationInput?.monthlyIncome || 0;
+  const existingEmis = simulationInput?.existingEmis || 0;
+  const currentSavingsCorpus = simulationInput?.currentSavingsCorpus || 0;
 
   const savingsHealth = monthlyIncome > 0 ? (currentSavingsCorpus / monthlyIncome) : 0;
-  const savingsHealthDescription = latestSimulations ? 
+  const savingsHealthDescription = simulationInput ? 
     (savingsHealth < 3 ? "Below recommended 3-6 months cover" : savingsHealth > 6 ? "Above recommended 3-6 months cover" : "Within recommended 3-6 months cover")
     : "Run a simulation to see your savings health.";
 
@@ -54,8 +41,8 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <SummaryCard isLoading={isSimLoading} title="Monthly Income" value={`₹${monthlyIncome.toLocaleString('en-IN')}`} description="From your latest simulation." icon={Landmark} />
-        <SummaryCard isLoading={isSimLoading} title="Total Monthly EMI" value={`₹${existingEmis.toLocaleString('en-IN')}`} description="From your latest simulation." icon={Wallet} />
+        <SummaryCard isLoading={isSimLoading} title="Monthly Income" value={`₹${monthlyIncome.toLocaleString('en-IN')}`} description="Live from your simulation profile." icon={Landmark} />
+        <SummaryCard isLoading={isSimLoading} title="Total Monthly EMI" value={`₹${existingEmis.toLocaleString('en-IN')}`} description="Live from your simulation profile." icon={Wallet} />
         <SummaryCard isLoading={isSimLoading} title="Savings Health" value={`${savingsHealth.toFixed(1)} months`} description={savingsHealthDescription} icon={HeartPulse} />
       </div>
 

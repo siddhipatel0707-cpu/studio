@@ -4,18 +4,19 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useUser, useFirestore, useCollection, useMemoFirebase, addDocumentNonBlocking } from "@/firebase";
+import { useUser, useFirestore, addDocumentNonBlocking } from "@/firebase";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { FinancialInputForm } from "../components/financial-input-form";
 import { SimulationResults } from "../components/simulation-results";
 import { PastSimulations } from "../components/past-simulations";
-import type { SimulationInput, StoredSimulation, SimulationResult } from "@/lib/types";
-import { collection, query, orderBy, limit, Timestamp } from "firebase/firestore";
+import type { SimulationInput, SimulationResult } from "@/lib/types";
+import { collection, Timestamp } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { calculateRetirement, calculateRetirementDelay, calculateStress } from "@/lib/finance-utils";
 import { getAIFinancialInsight } from "@/ai/flows/ai-financial-insight";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useSimulationContext } from "../layout";
 
 
 const formSchema = z.object({
@@ -44,6 +45,7 @@ export default function SimulationPage() {
   const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
+  const { simulationInput, setSimulationInput, isLoading: isContextLoading } = useSimulationContext();
 
   const [result, setResult] = useState<SimulationResult | null>(null);
   const [isSimulating, setIsSimulating] = useState(false);
@@ -52,40 +54,23 @@ export default function SimulationPage() {
 
   const form = useForm<SimulationInput>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      monthlyIncome: 50000,
-      existingEmis: 5000,
-      currentMonthlySavings: 15000,
-      currentSavingsCorpus: 500000,
-      currentAge: 30,
-      targetRetirementAge: 60,
-      expectedAnnualReturn: 12,
-      decisionType: 'Loan',
-      decisionName: "New Car",
-      plannedAmount: 10000,
-      loanDurationYears: 5,
-    },
+    defaultValues: simulationInput || undefined,
   });
-
-  const latestSimQuery = useMemoFirebase(() => {
-    if (!user) return null;
-    return query(
-        collection(firestore, "users", user.uid, "financialSimulations"),
-        orderBy("timestamp", "desc"),
-        limit(1)
-    );
-  }, [firestore, user]);
-
-  const { data: latestSimulations } = useCollection<StoredSimulation>(latestSimQuery);
-  const latestSimData = latestSimulations?.[0]?.inputs;
-
-  // Populate form with latest sim data on initial load
+  
   useEffect(() => {
-      if (latestSimData) {
-          form.reset(latestSimData);
-      }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [latestSimData]);
+    // When the component unmounts, update the shared context with the current form values.
+    return () => {
+        setSimulationInput(form.getValues());
+    }
+  }, [form, setSimulationInput]);
+
+  // If the context is updated from elsewhere (e.g. loading a past sim), reset the form
+  useEffect(() => {
+    if (simulationInput) {
+        form.reset(simulationInput);
+    }
+  }, [simulationInput, form]);
+
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -217,12 +202,12 @@ export default function SimulationPage() {
   };
   
   const handleLoadSimulation = (data: SimulationInput) => {
-    form.reset(data);
+    setSimulationInput(data);
     setResult(null); // Clear previous results when loading a new simulation
     toast({ title: "Simulation Loaded", description: "The financial profile has been updated. Click Simulate to run." });
   };
 
-  if (authLoading || !user) {
+  if (authLoading || !user || isContextLoading) {
     return (
       <div className="flex h-[calc(100vh-80px)] w-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
