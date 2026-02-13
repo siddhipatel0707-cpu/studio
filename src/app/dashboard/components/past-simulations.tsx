@@ -54,7 +54,7 @@ export function PastSimulations({ userId, onLoad, simulationCount }: PastSimulat
                 <div key={sim.id} className="flex items-center justify-between rounded-md border p-4">
                   <div>
                     <p className="text-sm font-medium">
-                        {sim.inputs.decisionType === 'Loan' ? 'Loan' : 'Purchase'} of ₹{sim.inputs.plannedAmount.toLocaleString('en-IN')}
+                        {sim.inputs.decisionType === 'Loan' ? 'Loan' : 'Purchase'} of ₹{(sim.inputs.plannedAmount || 0).toLocaleString('en-IN')}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {sim.timestamp ? formatDistanceToNow(sim.timestamp.toDate(), { addSuffix: true }) : 'Recently'}
