@@ -49,10 +49,12 @@ export default function DashboardLayout({
     const menuItems = [
         { href: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
         { href: '#', label: 'Decisions', icon: Wallet },
-        { href: '#', label: 'Simulation', icon: LineChart },
-        { href: '#', label: 'Truth Mode', icon: CheckSquare },
+        { href: '/dashboard', label: 'Simulation', icon: LineChart },
+        { href: '/dashboard/truth-mode', label: 'Truth Mode', icon: CheckSquare },
         { href: '#', label: 'Expert Help', icon: MessageSquare },
     ];
+    
+    const pageTitle = pathname.split('/').pop()?.replace('-', ' ') || 'Dashboard';
 
     return (
         <SidebarProvider>
@@ -98,7 +100,7 @@ export default function DashboardLayout({
             <SidebarInset>
                 <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6 md:px-8">
                     <SidebarTrigger className="md:hidden"/>
-                    <h1 className="text-2xl font-bold">Dashboard</h1>
+                    <h1 className="text-2xl font-bold capitalize">{pageTitle}</h1>
                 </header>
                 <main className="flex-1 p-4 sm:p-6 md:p-8">{children}</main>
             </SidebarInset>

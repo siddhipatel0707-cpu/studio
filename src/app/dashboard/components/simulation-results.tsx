@@ -6,7 +6,7 @@ import { StressIndicator } from "./stress-indicator";
 import { RetirementChart } from "./retirement-chart";
 import { AIInsightCard } from "./ai-insight-card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TrendingDown, TrendingUp, Wallet } from "lucide-react";
+import { TrendingDown, TrendingUp, LineChart } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface SimulationResultsProps {
@@ -56,10 +56,10 @@ export function SimulationResults({ result, isLoading, isAiLoading }: Simulation
   if (!result) {
     return (
         <Card className="flex flex-col items-center justify-center text-center p-8 h-full">
-            <Wallet className="h-16 w-16 text-muted-foreground mb-4" />
-            <CardTitle className="font-headline text-2xl">Ready to see your future?</CardTitle>
+            <LineChart className="h-16 w-16 text-muted-foreground mb-4" />
+            <CardTitle className="font-headline text-2xl">Simulation Results</CardTitle>
             <CardDescription className="mt-2">
-                Fill in your details and click "Simulate" to get started.
+                Your simulation results will appear here once you run a simulation.
             </CardDescription>
         </Card>
     );
