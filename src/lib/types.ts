@@ -42,3 +42,13 @@ export interface StoredSimulation {
     results: SimulationResult;
     timestamp: Timestamp;
 }
+
+export interface Expert {
+  id: string;
+  name: string;
+  role: string;
+  avatarUrl: string;
+  imageHint: string;
+  competencies: string[];
+  email: string;
+}

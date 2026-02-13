@@ -165,6 +165,53 @@
         "aiExplanationRiskLevel",
         "aiExplanationSaferAlternative"
       ]
+    },
+    "Expert": {
+      "title": "Expert",
+      "type": "object",
+      "description": "Represents a financial expert available for consultation.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the expert."
+        },
+        "name": {
+          "type": "string",
+          "description": "The expert's full name."
+        },
+        "role": {
+          "type": "string",
+          "description": "The expert's specialization or tag."
+        },
+        "avatarUrl": {
+          "type": "string",
+          "description": "URL for the expert's profile image."
+        },
+        "imageHint": {
+          "type": "string",
+          "description": "Hint for AI to find a relevant image."
+        },
+        "competencies": {
+          "type": "array",
+          "description": "A list of the expert's core competencies.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "role",
+        "avatarUrl",
+        "imageHint",
+        "competencies",
+        "email"
+      ]
     }
   },
   "auth": {
@@ -207,6 +254,22 @@
             {
               "name": "simulationId",
               "description": "The unique identifier for a specific financial simulation."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/experts/{expertId}",
+        "definition": {
+          "entityName": "Expert",
+          "schema": {
+            "$ref": "#/backend/entities/Expert"
+          },
+          "description": "Stores profiles of financial experts available for consultation. This collection is publicly readable.",
+          "params": [
+            {
+              "name": "expertId",
+              "description": "The unique identifier for an expert."
             }
           ]
         }

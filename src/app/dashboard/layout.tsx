@@ -51,7 +51,7 @@ export default function DashboardLayout({
         { href: '#', label: 'Decisions', icon: Wallet },
         { href: '/dashboard/simulation', label: 'Simulation', icon: LineChart },
         { href: '/dashboard/truth-mode', label: 'Truth Mode', icon: CheckSquare },
-        { href: '#', label: 'Expert Help', icon: MessageSquare },
+        { href: '/dashboard/expert-help', label: 'Expert Help', icon: MessageSquare },
     ];
     
     const pageTitleRaw = pathname.split('/').pop()?.replace('-', ' ') || 'Dashboard';

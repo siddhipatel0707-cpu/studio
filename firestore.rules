@@ -16,8 +16,7 @@
  *   to prevent enumeration of the user base.
  * - Ownership Enforcement: A user can only read, write, update, or delete data that exists
  *   within their own document tree, identified by `/users/{their-own-userId}`.
- * - No Public Data: There are no publicly readable collections in this model. All access requires
- *   user authentication.
+ * - Public Data: The `/experts` collection is publicly readable by any user.
  *
  * Denormalization for Authorization:
  * To ensure fast and simple authorization checks, financial simulation documents stored under
@@ -126,6 +125,18 @@ service cloud.firestore {
       allow create: if isOwner(userId) && isValidFinancialSimulationCreate(userId);
       allow update: if isExistingOwner(userId) && isValidFinancialSimulationUpdate();
       allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Rules for the experts collection.
+     * @path /experts/{expertId}
+     * @allow (get, list) Any user can read the list of experts.
+     * @deny (write, update, delete) No user can modify the experts collection.
+     * @principle Provides public read access to expert profiles.
+     */
+    match /experts/{expertId} {
+      allow get, list: if true;
+      allow write, update, delete: if false; // Admin-only writes
     }
   }
 }

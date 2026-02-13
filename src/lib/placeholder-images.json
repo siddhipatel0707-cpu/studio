@@ -1,3 +1,28 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "expert-1",
+      "description": "Dr. Aristha Singh",
+      "imageUrl": "https://images.unsplash.com/photo-1676694047708-1ca814f7e220?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHx3b21hbiUyMGZpbmFuY2lhbCUyMGFkdmlzb3J8ZW58MHx8fHwxNzcwOTY2NjQxfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "woman financial advisor"
+    },
+    {
+      "id": "expert-2",
+      "description": "Marcus Chen",
+      "imageUrl": "https://picsum.photos/seed/expert2/200/200",
+      "imageHint": "man financial advisor"
+    },
+    {
+      "id": "expert-3",
+      "description": "Sarah Jenkins",
+      "imageUrl": "https://images.unsplash.com/photo-1659353219716-699803846194?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8d29tYW4lMjBiZWhhdmlvcmFsJTIwY29hY2h8ZW58MHx8fHwxNzcwOTY2NjM3fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "woman behavioral coach"
+    },
+    {
+      "id": "expert-4",
+      "description": "David Osei",
+      "imageUrl": "https://images.unsplash.com/photo-1587392593700-dd158c639780?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxtYW4lMjB0YXglMjBhZHZpc29yfGVufDB8fHx8MTc3MDk2NjYzN3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "man tax advisor"
+    }
+  ]
 }
