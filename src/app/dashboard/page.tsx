@@ -68,78 +68,81 @@ export default function DashboardPage() {
     setIsSimulating(true);
     setIsAiLoading(true);
 
-    const plannedEmiForStress = data.decisionType === 'Loan' ? data.plannedAmount : 0;
-    const stressResult = calculateStress(data.monthlyIncome, data.existingEmis, plannedEmiForStress);
-
-    const { corpus: corpusBefore } = calculateRetirement(
-      data.currentSavingsCorpus,
-      data.currentMonthlySavings,
-      data.expectedAnnualReturn,
-      data.currentAge,
-      data.targetRetirementAge
-    );
-
-    let corpusAfter, monthlyGrowthData;
-
-    if (data.decisionType === 'Loan') {
-        const newMonthlySavings = data.currentMonthlySavings - data.plannedAmount;
-        const { corpus, monthlyGrowthData: growthData } = calculateRetirement(
-            data.currentSavingsCorpus,
-            newMonthlySavings > 0 ? newMonthlySavings : 0,
-            data.expectedAnnualReturn,
-            data.currentAge,
-            data.targetRetirementAge,
-            true // generate chart data
-        );
-        corpusAfter = corpus;
-        monthlyGrowthData = growthData;
-    } else { // Purchase
-        const newCorpus = data.currentSavingsCorpus - data.plannedAmount;
-        const { corpus, monthlyGrowthData: growthData } = calculateRetirement(
-            newCorpus,
-            data.currentMonthlySavings,
-            data.expectedAnnualReturn,
-            data.currentAge,
-            data.targetRetirementAge,
-            true // generate chart data
-        );
-        corpusAfter = corpus;
-        monthlyGrowthData = growthData;
-    }
-
-
-    const retirementDelay = calculateRetirementDelay({
-      originalCorpus: corpusBefore,
-      newMonthlySavings: data.decisionType === 'Loan' ? data.currentMonthlySavings - data.plannedAmount : data.currentMonthlySavings,
-      annualRate: data.expectedAnnualReturn,
-      currentCorpus: data.decisionType === 'Purchase' ? data.currentSavingsCorpus - data.plannedAmount : data.currentSavingsCorpus,
-      currentAge: data.targetRetirementAge,
-      originalRetirementAge: data.targetRetirementAge
-    });
-
-    const chartData = monthlyGrowthData?.map(item => {
-        const age = data.currentAge + item.month / 12;
-        const beforeDecisionCorpus = calculateRetirement(data.currentSavingsCorpus, data.currentMonthlySavings, data.expectedAnnualReturn, data.currentAge, age).corpus;
-        return {
-            age: Math.floor(age),
-            "Before Decision": beforeDecisionCorpus,
-            "After Decision": item.corpus,
-        }
-    }).filter((_, i) => i % 12 === 0);
-
-    const simulationResult: SimulationResult = {
-      stress: stressResult,
-      corpusBefore,
-      corpusAfter,
-      retirementDelay,
-      chartData: chartData || [],
-      aiInsight: "",
-    };
-    setResult(simulationResult);
-    setIsSimulating(false);
-    
     try {
-        if (!user) throw new Error("User not found");
+        // --- START OF LOCAL CALCULATION ---
+        const plannedEmiForStress = data.decisionType === 'Loan' ? data.plannedAmount : 0;
+        const stressResult = calculateStress(data.monthlyIncome, data.existingEmis, plannedEmiForStress);
+
+        const { corpus: corpusBefore } = calculateRetirement(
+          data.currentSavingsCorpus,
+          data.currentMonthlySavings,
+          data.expectedAnnualReturn,
+          data.currentAge,
+          data.targetRetirementAge
+        );
+
+        let corpusAfter, monthlyGrowthData;
+
+        if (data.decisionType === 'Loan') {
+            const newMonthlySavings = data.currentMonthlySavings - data.plannedAmount;
+            const { corpus, monthlyGrowthData: growthData } = calculateRetirement(
+                data.currentSavingsCorpus,
+                newMonthlySavings > 0 ? newMonthlySavings : 0,
+                data.expectedAnnualReturn,
+                data.currentAge,
+                data.targetRetirementAge,
+                true // generate chart data
+            );
+            corpusAfter = corpus;
+            monthlyGrowthData = growthData;
+        } else { // Purchase
+            const newCorpus = data.currentSavingsCorpus - data.plannedAmount;
+            const { corpus, monthlyGrowthData: growthData } = calculateRetirement(
+                newCorpus,
+                data.currentMonthlySavings,
+                data.expectedAnnualReturn,
+                data.currentAge,
+                data.targetRetirementAge,
+                true // generate chart data
+            );
+            corpusAfter = corpus;
+            monthlyGrowthData = growthData;
+        }
+
+
+        const retirementDelay = calculateRetirementDelay({
+          originalCorpus: corpusBefore,
+          newMonthlySavings: data.decisionType === 'Loan' ? data.currentMonthlySavings - data.plannedAmount : data.currentMonthlySavings,
+          annualRate: data.expectedAnnualReturn,
+          currentCorpus: data.decisionType === 'Purchase' ? data.currentSavingsCorpus - data.plannedAmount : data.currentSavingsCorpus,
+          currentAge: data.targetRetirementAge,
+          originalRetirementAge: data.targetRetirementAge
+        });
+
+        const chartData = monthlyGrowthData?.map(item => {
+            const age = data.currentAge + item.month / 12;
+            const beforeDecisionCorpus = calculateRetirement(data.currentSavingsCorpus, data.currentMonthlySavings, data.expectedAnnualReturn, data.currentAge, age).corpus;
+            return {
+                age: Math.floor(age),
+                "Before Decision": beforeDecisionCorpus,
+                "After Decision": item.corpus,
+            }
+        }).filter((_, i) => i % 12 === 0);
+
+        const simulationResult: SimulationResult = {
+          stress: stressResult,
+          corpusBefore,
+          corpusAfter,
+          retirementDelay,
+          chartData: chartData || [],
+          aiInsight: "",
+        };
+        setResult(simulationResult);
+        // --- END OF LOCAL CALCULATION ---
+        
+        if (!user) throw new Error("User not found for AI Insight");
+
+        // --- START OF AI CALL & FIRESTORE ---
         const aiInput = {
             income: data.monthlyIncome,
             totalEmiAfterDecision: data.existingEmis + plannedEmiForStress,
@@ -149,16 +152,22 @@ export default function DashboardPage() {
             retirementDelay: retirementDelay,
         };
         const insight = await getAIFinancialInsight(aiInput);
-        setResult(prev => prev ? { ...prev, aiInsight: insight } : null);
-
-        const simulationsCollectionRef = collection(firestore, 'users', user.uid, 'financialSimulations');
         
-        addDocumentNonBlocking(simulationsCollectionRef, {
-            userId: user.uid,
-            inputs: data,
-            results: { ...simulationResult, aiInsight: insight },
-            timestamp: Timestamp.now(),
+        // Use a functional update to avoid stale state issues with the result object
+        setResult(prev => {
+            const newResult = prev ? { ...prev, aiInsight: insight } : null;
+            if (newResult && user) {
+                const simulationsCollectionRef = collection(firestore, 'users', user.uid, 'financialSimulations');
+                addDocumentNonBlocking(simulationsCollectionRef, {
+                    userId: user.uid,
+                    inputs: data,
+                    results: newResult, // Save the complete result
+                    timestamp: Timestamp.now(),
+                });
+            }
+            return newResult;
         });
+
 
         setSimulationCount(prev => prev + 1);
         toast({
@@ -174,6 +183,7 @@ export default function DashboardPage() {
             description: e.message || "Could not generate AI insight or save simulation.",
         });
     } finally {
+        setIsSimulating(false);
         setIsAiLoading(false);
     }
   }, [user, toast, firestore]);
