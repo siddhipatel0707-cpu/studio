@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { PastSimulations } from "./components/past-simulations";
 import { collection, Timestamp } from "firebase/firestore";
 import { SummaryCard } from "./components/summary-card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const formSchema = z.object({
   monthlyIncome: z.coerce.number().min(0, "Monthly income must be positive."),
@@ -227,12 +228,22 @@ export default function DashboardPage() {
         </div>
 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-            <div className="space-y-8">
+            <div>
                 <FinancialInputForm form={form} onSubmit={handleRunSimulation} isSimulating={isSimulating} />
-                <PastSimulations userId={user.uid} onLoad={loadSimulation} simulationCount={simulationCount} isSimulating={isSimulating} />
             </div>
             <div>
-                <SimulationResults result={result} isLoading={isSimulating} isAiLoading={isSimulating} />
+                <Tabs defaultValue="results" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="results">Simulation Results</TabsTrigger>
+                        <TabsTrigger value="history">Simulation History</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="results" className="mt-4">
+                        <SimulationResults result={result} isLoading={isSimulating} isAiLoading={isSimulating} />
+                    </TabsContent>
+                    <TabsContent value="history" className="mt-4">
+                        <PastSimulations userId={user.uid} onLoad={loadSimulation} simulationCount={simulationCount} isSimulating={isSimulating} />
+                    </TabsContent>
+                </Tabs>
             </div>
         </div>
     </div>
