@@ -1,0 +1,217 @@
+{
+  "entities": {
+    "UserProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserProfile",
+      "type": "object",
+      "description": "Represents a user's profile in the application, primarily used to link financial simulations to a specific user account from the external authentication system.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UserProfile entity, matching the Firebase Authentication user ID (UID)."
+        },
+        "email": {
+          "type": "string",
+          "description": "The email address associated with the user's account.",
+          "format": "email"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the user profile was created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "createdAt"
+      ]
+    },
+    "FinancialSimulation": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "FinancialSimulation",
+      "type": "object",
+      "description": "Stores a user's financial inputs, calculated simulation results, and the AI-generated explanation for a specific financial decision scenario.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the FinancialSimulation entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the UserProfile entity. (Relationship: UserProfile 1:N FinancialSimulation)"
+        },
+        "simulationTimestamp": {
+          "type": "string",
+          "description": "Timestamp indicating when this financial simulation was performed.",
+          "format": "date-time"
+        },
+        "monthlyIncome": {
+          "type": "number",
+          "description": "The user's current monthly income."
+        },
+        "existingEmis": {
+          "type": "number",
+          "description": "The total amount of existing monthly EMI (Equated Monthly Installment) payments."
+        },
+        "currentMonthlySavings": {
+          "type": "number",
+          "description": "The amount the user is currently saving each month."
+        },
+        "currentSavingsCorpus": {
+          "type": "number",
+          "description": "The total accumulated savings corpus the user has at present."
+        },
+        "currentAge": {
+          "type": "number",
+          "description": "The user's current age in years."
+        },
+        "targetRetirementAge": {
+          "type": "number",
+          "description": "The user's target age for retirement in years."
+        },
+        "expectedAnnualReturnPercentage": {
+          "type": "number",
+          "description": "The expected annual return percentage on investments (e.g., 8.5 for 8.5%)."
+        },
+        "plannedEmiOrPurchaseAmount": {
+          "type": "number",
+          "description": "The amount of the planned new EMI or a one-time purchase amount."
+        },
+        "decisionDurationMonths": {
+          "type": "number",
+          "description": "The duration of the planned financial decision in months."
+        },
+        "decisionType": {
+          "type": "string",
+          "description": "The type of financial decision being simulated ('Loan' or 'Purchase').",
+          "format": "enum",
+          "items": {
+            "type": "string"
+          }
+        },
+        "totalEmiAfterDecision": {
+          "type": "number",
+          "description": "The total monthly EMI amount after factoring in the new financial decision."
+        },
+        "stressRatio": {
+          "type": "number",
+          "description": "The calculated financial stress ratio (Total EMI / Monthly Income)."
+        },
+        "remainingIncome": {
+          "type": "number",
+          "description": "The user's income remaining after all EMI deductions."
+        },
+        "financialStressLevel": {
+          "type": "string",
+          "description": "Categorization of financial stress based on the stress ratio ('Safe', 'Risky', 'Financial Stress Zone').",
+          "format": "enum",
+          "items": {
+            "type": "string"
+          }
+        },
+        "futureValueBeforeDecision": {
+          "type": "number",
+          "description": "The projected retirement corpus value if the new financial decision is NOT made."
+        },
+        "futureValueAfterDecision": {
+          "type": "number",
+          "description": "The projected retirement corpus value if the new financial decision IS made."
+        },
+        "retirementDelayYears": {
+          "type": "number",
+          "description": "The estimated number of years by which retirement might be delayed due to the financial decision (can be negative if corpus increases, or 0 if no change)."
+        },
+        "aiExplanationSimple": {
+          "type": "string",
+          "description": "AI-generated simple explanation of the simulation results."
+        },
+        "aiExplanationEmotionalImpact": {
+          "type": "string",
+          "description": "AI-generated insight into the emotional impact of the financial decision."
+        },
+        "aiExplanationRiskLevel": {
+          "type": "string",
+          "description": "AI-generated explanation of the financial risk level associated with the decision."
+        },
+        "aiExplanationSaferAlternative": {
+          "type": "string",
+          "description": "AI-generated suggestion for a practical safer alternative to the financial decision."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "simulationTimestamp",
+        "monthlyIncome",
+        "existingEmis",
+        "currentMonthlySavings",
+        "currentSavingsCorpus",
+        "currentAge",
+        "targetRetirementAge",
+        "expectedAnnualReturnPercentage",
+        "plannedEmiOrPurchaseAmount",
+        "decisionDurationMonths",
+        "decisionType",
+        "totalEmiAfterDecision",
+        "stressRatio",
+        "remainingIncome",
+        "financialStressLevel",
+        "futureValueBeforeDecision",
+        "futureValueAfterDecision",
+        "retirementDelayYears",
+        "aiExplanationSimple",
+        "aiExplanationEmotionalImpact",
+        "aiExplanationRiskLevel",
+        "aiExplanationSaferAlternative"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "UserProfile",
+          "schema": {
+            "$ref": "#/backend/entities/UserProfile"
+          },
+          "description": "Stores user profile information. Each document's ID is the Firebase Authentication UID, establishing direct ownership. This collection primarily links the external authentication system to user-specific data in Firestore.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user, corresponding to Firebase Authentication UID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/financialSimulations/{simulationId}",
+        "definition": {
+          "entityName": "FinancialSimulation",
+          "schema": {
+            "$ref": "#/backend/entities/FinancialSimulation"
+          },
+          "description": "Stores individual financial simulation records for a specific user. Each document includes a denormalized 'userId' field for authorization independence, explicitly linking it to the owning user and enabling simple, direct security rule checks.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the owning user, corresponding to Firebase Authentication UID."
+            },
+            {
+              "name": "simulationId",
+              "description": "The unique identifier for a specific financial simulation."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure for 'Future Impact Analyzer' is designed to prioritize security, scalability, and debuggability, adhering strictly to the core design principles and strategy mandates. \n\n**Authorization Independence (CRITICAL) & Denormalization:**\n\n1.  **User Profiles (`/users/{userId}`):** User profiles are stored in the top-level collection `/users`. Each document's ID (`userId`) is directly the Firebase Authentication User ID (UID). This establishes a clear, path-based ownership, where `request.auth.uid` is used to authorize access to the user's own profile. No `get()` calls are needed to determine ownership for this collection.\n2.  **Financial Simulations (`/users/{userId}/financialSimulations/{simulationId}`):** Financial simulation data is stored as a subcollection under each user's profile. Each `FinancialSimulation` document explicitly includes a `userId` field. This `userId` field is a direct denormalization of the parent user's ID and `request.auth.uid`. This is crucial for Authorization Independence: instead of requiring a `get()` call to the parent `/users/{userId}` document to check ownership, security rules can directly evaluate `resource.data.userId == request.auth.uid`. This design enables atomic operations (like creating a simulation without first fetching user data for authorization) and significantly simplifies security rules by eliminating cross-document reads, which are expensive and complex to debug.\n\n**QAPs (Rules are not Filters):**\n\nThe chosen hierarchical structure inherently supports secure `list` operations without relying on filtering in rules:\n\n*   **User Profiles:** While direct `list` operations on `/users` would typically be denied for non-admin users, individual user profiles are accessed via their specific UID (e.g., `/users/{{request.auth.uid}}`). Any `get` or `list` rule for a specific user's path can enforce `request.auth.uid == userId`, ensuring that users can only access their own profile data directly.\n*   **Financial Simulations:** For a user to view their past simulations, they will query `/users/{request.auth.uid}/financialSimulations`. The security rules will ensure that the `{userId}` wildcard in the path matches `request.auth.uid`, effectively allowing `list` operations only for the currently authenticated user's own simulations. Because each `FinancialSimulation` document also contains `userId`, rules can also cross-verify `resource.data.userId == request.auth.uid`, further reinforcing security and enabling secure `list` reads without filtering. This design guarantees that `list` operations will only return data genuinely owned by the requesting user, making rules robust and simple to write (e.g., `allow read: if request.auth.uid == userId;`).\n\n**Structural Segregation & Access Modeling:**\n\n*   All documents within `/users/{userId}` represent `UserProfile` data and share the same private access requirements (owner-only). Similarly, all documents within `/users/{userId}/financialSimulations/{simulationId}` represent `FinancialSimulation` data, also with owner-only access. This ensures a homogeneous security posture within each collection/subcollection, simplifying rule logic. The path-based ownership `/users/{userId}` and the hierarchical structure `/users/{userId}/financialSimulations/{simulationId}` are standard and robust patterns for private, user-owned data."
+  }
+}

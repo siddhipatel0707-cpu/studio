@@ -1,0 +1,131 @@
+/**
+ * This ruleset enforces a strict user-ownership model for the 'Future Impact Analyzer' application.
+ *
+ * Core Philosophy:
+ * All user data is considered private and can only be accessed by the user who owns it.
+ * The security model relies on the authenticated user's ID (UID) to grant access, ensuring
+ * a clear and non-permissive security posture from the root.
+ *
+ * Data Structure:
+ * The data is organized hierarchically. A top-level `/users` collection holds user profiles,
+ * and all other user-specific data, such as financial simulations, are stored in subcollections
+ * under the user's specific document (e.g., `/users/{userId}/financialSimulations`).
+ *
+ * Key Security Decisions:
+ * - User Privacy: Listing all users from the top-level `/users` collection is explicitly disallowed
+ *   to prevent enumeration of the user base.
+ * - Ownership Enforcement: A user can only read, write, update, or delete data that exists
+ *   within their own document tree, identified by `/users/{their-own-userId}`.
+ * - No Public Data: There are no publicly readable collections in this model. All access requires
+ *   user authentication.
+ *
+ * Denormalization for Authorization:
+ * To ensure fast and simple authorization checks, financial simulation documents stored under
+ * `/users/{userId}/financialSimulations/{simulationId}` contain a denormalized `userId` field.
+ * This allows rules to validate ownership directly from the document's data without needing to
+ * perform costly `get()` calls to parent documents. On creation and update, rules ensure this
+ * `userId` field is correctly set and immutable, maintaining relational integrity.
+ *
+ * Structural Segregation:
+ * The data model naturally segregates private data by placing all user-specific information
+ * into a user-owned document tree. This avoids mixing private and public data within the same
+ * collection, which simplifies list queries and strengthens security.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions to improve readability and reusability.
+
+    /**
+     * Checks if a user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the currently authenticated user's UID matches the provided userId.
+     * This is the primary function for enforcing user ownership.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * Combines an ownership check with a check that the document already exists.
+     * Used for all update and delete operations to prevent modifying non-existent data.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * Validates required fields for creating a new UserProfile.
+     * In Prototyping Mode, this ONLY validates the `id` field, which is critical for
+     * linking the document data to the authenticated owner.
+     */
+    function isValidUserProfileCreate(userId) {
+      return request.resource.data.id == userId;
+    }
+
+    /**
+     * Validates fields for updating a UserProfile.
+     * In Prototyping Mode, this ONLY enforces the immutability of the `id` field
+     * to prevent re-assigning the profile to a different user.
+     */
+    function isValidUserProfileUpdate() {
+      return request.resource.data.id == resource.data.id;
+    }
+    
+    /**
+     * Validates required fields for creating a new FinancialSimulation.
+     * This rule ensures the denormalized `userId` field correctly points back to
+     * the parent user document, establishing the ownership link within the data itself.
+     */
+    function isValidFinancialSimulationCreate(userId) {
+      return request.resource.data.userId == userId;
+    }
+    
+    /**
+     * Validates fields for updating a FinancialSimulation.
+     * This rule enforces the immutability of the `userId` field, preventing the
+     * simulation from being reassigned to another user.
+     */
+    function isValidFinancialSimulationUpdate() {
+      return request.resource.data.userId == resource.data.userId;
+    }
+
+    /**
+     * @description Rules for the UserProfile document.
+     * @path /users/{userId}
+     * @allow (get, update, delete) A signed-in user (auth.uid='user123') can get, update, or delete their own profile at `/users/user123`.
+     * @allow (create) A new user (auth.uid='user123') can create their profile document at `/users/user123`.
+     * @deny (list) No user can list all documents in the `/users` collection.
+     * @deny (any) An authenticated user (auth.uid='user456') cannot access or modify `/users/user123`.
+     * @principle Restricts access to a user's own data tree and enforces self-creation of their root document.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId) && isValidUserProfileCreate(userId);
+      allow update: if isExistingOwner(userId) && isValidUserProfileUpdate();
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Rules for a user's financial simulation documents.
+     * @path /users/{userId}/financialSimulations/{simulationId}
+     * @allow (get, list, create, update, delete) A signed-in user (auth.uid='user123') can perform any operation on documents inside `/users/user123/financialSimulations`.
+     * @deny (any) An authenticated user (auth.uid='user456') cannot perform any operation on documents inside `/users/user123/financialSimulations`.
+     * @principle Enforces document ownership for all operations within a user's private subcollection. Validates denormalized ownership fields for relational integrity.
+     */
+    match /users/{userId}/financialSimulations/{simulationId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidFinancialSimulationCreate(userId);
+      allow update: if isExistingOwner(userId) && isValidFinancialSimulationUpdate();
+      allow delete: if isExistingOwner(userId);
+    }
+  }
+}
