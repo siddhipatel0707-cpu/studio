@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { FinancialInputForm } from "./components/financial-input-form";
@@ -24,10 +24,15 @@ const formSchema = z.object({
   currentAge: z.coerce.number().min(18, "Age must be at least 18.").max(100),
   targetRetirementAge: z.coerce.number().min(18, "Retirement age must be at least 18.").max(100),
   expectedAnnualReturn: z.coerce.number().min(0, "Return must be positive.").max(100),
-  plannedEmi: z.coerce.number().min(0, "Planned EMI must be positive."),
+  decisionType: z.enum(['Loan', 'Purchase']),
+  plannedAmount: z.coerce.number().min(1, "Amount must be positive."),
+  loanDurationYears: z.coerce.number().min(0, "Duration must be positive."),
 }).refine(data => data.targetRetirementAge > data.currentAge, {
   message: "Retirement age must be greater than current age.",
   path: ["targetRetirementAge"],
+}).refine(data => data.decisionType !== 'Loan' || data.loanDurationYears > 0, {
+    message: "Loan duration must be greater than 0 for a loan.",
+    path: ["loanDurationYears"],
 });
 
 export default function DashboardPage() {
@@ -51,17 +56,18 @@ export default function DashboardPage() {
       currentAge: 30,
       targetRetirementAge: 60,
       expectedAnnualReturn: 12,
-      plannedEmi: 10000,
+      decisionType: 'Loan',
+      plannedAmount: 10000,
+      loanDurationYears: 5,
     },
   });
-  
-  const formValues = useWatch({ control: form.control });
 
   const runSimulation = useCallback(async (data: SimulationInput) => {
     setIsSimulating(true);
     setIsAiLoading(true);
 
-    const stressResult = calculateStress(data.monthlyIncome, data.existingEmis, data.plannedEmi);
+    const plannedEmiForStress = data.decisionType === 'Loan' ? data.plannedAmount : 0;
+    const stressResult = calculateStress(data.monthlyIncome, data.existingEmis, plannedEmiForStress);
 
     const { corpus: corpusBefore } = calculateRetirement(
       data.currentSavingsCorpus,
@@ -71,21 +77,40 @@ export default function DashboardPage() {
       data.targetRetirementAge
     );
 
-    const newMonthlySavings = data.currentMonthlySavings - data.plannedEmi;
-    const { corpus: corpusAfter, monthlyGrowthData } = calculateRetirement(
-      data.currentSavingsCorpus,
-      newMonthlySavings > 0 ? newMonthlySavings : 0,
-      data.expectedAnnualReturn,
-      data.currentAge,
-      data.targetRetirementAge,
-      true // generate chart data
-    );
+    let corpusAfter, monthlyGrowthData;
+
+    if (data.decisionType === 'Loan') {
+        const newMonthlySavings = data.currentMonthlySavings - data.plannedAmount;
+        const { corpus, monthlyGrowthData: growthData } = calculateRetirement(
+            data.currentSavingsCorpus,
+            newMonthlySavings > 0 ? newMonthlySavings : 0,
+            data.expectedAnnualReturn,
+            data.currentAge,
+            data.targetRetirementAge,
+            true // generate chart data
+        );
+        corpusAfter = corpus;
+        monthlyGrowthData = growthData;
+    } else { // Purchase
+        const newCorpus = data.currentSavingsCorpus - data.plannedAmount;
+        const { corpus, monthlyGrowthData: growthData } = calculateRetirement(
+            newCorpus,
+            data.currentMonthlySavings,
+            data.expectedAnnualReturn,
+            data.currentAge,
+            data.targetRetirementAge,
+            true // generate chart data
+        );
+        corpusAfter = corpus;
+        monthlyGrowthData = growthData;
+    }
+
 
     const retirementDelay = calculateRetirementDelay({
       originalCorpus: corpusBefore,
-      newMonthlySavings: newMonthlySavings > 0 ? newMonthlySavings : 0,
+      newMonthlySavings: data.decisionType === 'Loan' ? data.currentMonthlySavings - data.plannedAmount : data.currentMonthlySavings,
       annualRate: data.expectedAnnualReturn,
-      currentCorpus: data.currentSavingsCorpus,
+      currentCorpus: data.decisionType === 'Purchase' ? data.currentSavingsCorpus - data.plannedAmount : data.currentSavingsCorpus,
       currentAge: data.targetRetirementAge,
       originalRetirementAge: data.targetRetirementAge
     });
@@ -115,7 +140,7 @@ export default function DashboardPage() {
         if (!user) throw new Error("User not found");
         const aiInput = {
             income: data.monthlyIncome,
-            totalEmiAfterDecision: data.existingEmis + data.plannedEmi,
+            totalEmiAfterDecision: data.existingEmis + plannedEmiForStress,
             stressRatio: stressResult.ratio,
             retirementCorpusBefore: corpusBefore,
             retirementCorpusAfter: corpusAfter,

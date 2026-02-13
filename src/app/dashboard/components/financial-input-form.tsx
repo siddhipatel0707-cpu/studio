@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm, UseFormReturn } from "react-hook-form";
+import { UseFormReturn, useWatch } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import type { SimulationInput } from "@/lib/types";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 interface FinancialInputFormProps {
   form: UseFormReturn<SimulationInput>;
@@ -22,6 +23,11 @@ interface FinancialInputFormProps {
 }
 
 export function FinancialInputForm({ form, onSubmit, isSimulating }: FinancialInputFormProps) {
+  const decisionType = useWatch({
+    control: form.control,
+    name: "decisionType",
+  });
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -109,17 +115,61 @@ export function FinancialInputForm({ form, onSubmit, isSimulating }: FinancialIn
                 <CardTitle className="font-headline">New Financial Decision</CardTitle>
                 <CardDescription>Enter the details of your planned expense.</CardDescription>
             </CardHeader>
-            <CardContent>
-                <FormField control={form.control} name="plannedEmi" render={({ field }) => (
+            <CardContent className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="decisionType"
+                  render={({ field }) => (
+                    <FormItem className="space-y-3">
+                      <FormLabel>Decision Type</FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                          className="flex space-x-4"
+                        >
+                          <FormItem className="flex items-center space-x-2 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="Loan" />
+                            </FormControl>
+                            <FormLabel className="font-normal">Loan / New EMI</FormLabel>
+                          </FormItem>
+                          <FormItem className="flex items-center space-x-2 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="Purchase" />
+                            </FormControl>
+                            <FormLabel className="font-normal">One-time Purchase</FormLabel>
+                          </FormItem>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField control={form.control} name="plannedAmount" render={({ field }) => (
                     <FormItem>
-                    <FormLabel>Planned Additional EMI / Monthly Expense</FormLabel>
+                    <FormLabel>{decisionType === 'Loan' ? 'Monthly EMI Amount' : 'Purchase Amount'}</FormLabel>
                     <FormControl>
-                        <Input type="number" placeholder="10000" {...field} />
+                        <Input type="number" placeholder={decisionType === 'Loan' ? '10000' : '200000'} {...field} />
                     </FormControl>
                     <FormMessage />
                     </FormItem>
                 )}
                 />
+                
+                {decisionType === 'Loan' && (
+                    <FormField control={form.control} name="loanDurationYears" render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Loan Duration (Years)</FormLabel>
+                        <FormControl>
+                            <Input type="number" placeholder="5" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                )}
             </CardContent>
             <CardFooter>
                  <Button type="submit" className="w-full" disabled={isSimulating}>

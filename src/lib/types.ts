@@ -8,7 +8,9 @@ export interface SimulationInput {
   currentAge: number;
   targetRetirementAge: number;
   expectedAnnualReturn: number;
-  plannedEmi: number;
+  decisionType: 'Loan' | 'Purchase';
+  plannedAmount: number;
+  loanDurationYears: number;
 }
 
 export interface StressResult {
