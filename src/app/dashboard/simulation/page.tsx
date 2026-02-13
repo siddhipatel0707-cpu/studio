@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -57,9 +57,12 @@ export default function SimulationPage() {
   });
   
   useEffect(() => {
-    // When the component unmounts, update the shared context with the current form values.
-    const subscription = form.watch((value) => {
-        setSimulationInput(value as SimulationInput);
+    // Sync form changes to the global context, but only on user input.
+    const subscription = form.watch((value, { type }) => {
+        // This check prevents an infinite loop. `form.reset` does not have a 'change' type.
+        if (type === 'change') {
+            setSimulationInput(value as SimulationInput);
+        }
     });
     return () => subscription.unsubscribe();
   }, [form, setSimulationInput]);
