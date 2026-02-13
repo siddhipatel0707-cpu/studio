@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { getSimulationsForUser } from "@/lib/firebase/firestore";
+import { useMemo } from "react";
+import { collection, query, orderBy, limit } from "firebase/firestore";
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import type { SimulationInput, StoredSimulation } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,18 +17,18 @@ interface PastSimulationsProps {
 }
 
 export function PastSimulations({ userId, onLoad, simulationCount }: PastSimulationsProps) {
-  const [simulations, setSimulations] = useState<StoredSimulation[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const firestore = useFirestore();
 
-  useEffect(() => {
-    async function fetchSimulations() {
-      setIsLoading(true);
-      const fetchedSimulations = await getSimulationsForUser(userId);
-      setSimulations(fetchedSimulations);
-      setIsLoading(false);
-    }
-    fetchSimulations();
-  }, [userId, simulationCount]);
+  const simulationsQuery = useMemoFirebase(() => {
+    if (!userId) return null;
+    return query(
+      collection(firestore, "users", userId, "financialSimulations"),
+      orderBy("timestamp", "desc"),
+      limit(10)
+    );
+  }, [firestore, userId, simulationCount]);
+
+  const { data: simulations, isLoading } = useCollection<StoredSimulation>(simulationsQuery);
 
   return (
     <Card>
@@ -41,7 +42,7 @@ export function PastSimulations({ userId, onLoad, simulationCount }: PastSimulat
             <div className="flex items-center justify-center h-full">
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
-          ) : simulations.length === 0 ? (
+          ) : !simulations || simulations.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-4">
                 <History className="h-10 w-10 mb-2" />
                 <p>No past simulations found.</p>
@@ -56,7 +57,7 @@ export function PastSimulations({ userId, onLoad, simulationCount }: PastSimulat
                         EMI of ₹{sim.inputs.plannedEmi.toLocaleString('en-IN')}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(sim.timestamp.toDate(), { addSuffix: true })}
+                      {sim.timestamp ? formatDistanceToNow(sim.timestamp.toDate(), { addSuffix: true }) : 'Recently'}
                     </p>
                   </div>
                   <Button variant="outline" size="sm" onClick={() => onLoad(sim.inputs)}>

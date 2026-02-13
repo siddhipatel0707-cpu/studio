@@ -16,12 +16,12 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth, db } from "@/lib/firebase/client";
+import { useAuth, useFirestore, useUser, setDocumentNonBlocking } from "@/firebase";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
-import { doc, setDoc } from "firebase/firestore";
+import { doc } from "firebase/firestore";
 
 const formSchema = z.object({
   email: z.string().email({
@@ -40,6 +40,9 @@ export default function SignupPage() {
   const { toast } = useToast();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const auth = useAuth();
+  const firestore = useFirestore();
+  const { user, isUserLoading } = useUser();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -50,19 +53,25 @@ export default function SignupPage() {
     },
   });
 
+  useEffect(() => {
+    if (!isUserLoading && user) {
+        router.replace('/dashboard');
+    }
+  }, [user, isUserLoading, router]);
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const user = userCredential.user;
       
-      // Store user UID in Firestore
-      await setDoc(doc(db, "users", user.uid), {
+      const userDocRef = doc(firestore, "users", user.uid);
+      setDocumentNonBlocking(userDocRef, {
+        id: user.uid,
         email: user.email,
-        createdAt: new Date(),
-      });
+        createdAt: new Date().toISOString(),
+      }, { merge: true });
       
-      router.push("/dashboard");
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -72,6 +81,14 @@ export default function SignupPage() {
     } finally {
         setIsLoading(false);
     }
+  }
+
+  if (isUserLoading || user) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
   }
 
   return (

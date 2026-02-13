@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -9,12 +9,12 @@ import { SimulationResults } from "./components/simulation-results";
 import type { SimulationInput, SimulationResult } from "@/lib/types";
 import { calculateRetirement, calculateRetirementDelay, calculateStress } from "@/lib/finance-utils";
 import { getAIFinancialInsight } from "@/ai/flows/ai-financial-insight";
-import { useAuth } from "@/hooks/use-auth";
+import { useUser, useFirestore, addDocumentNonBlocking } from "@/firebase";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
-import { addSimulation } from "@/lib/firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { PastSimulations } from "./components/past-simulations";
+import { collection, Timestamp } from "firebase/firestore";
 
 const formSchema = z.object({
   monthlyIncome: z.coerce.number().min(0, "Monthly income must be positive."),
@@ -31,7 +31,8 @@ const formSchema = z.object({
 });
 
 export default function DashboardPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, isUserLoading: authLoading } = useUser();
+  const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -123,23 +124,32 @@ export default function DashboardPage() {
         const insight = await getAIFinancialInsight(aiInput);
         setResult(prev => prev ? { ...prev, aiInsight: insight } : null);
 
-        await addSimulation(user.uid, data, { ...simulationResult, aiInsight: insight });
+        const simulationsCollectionRef = collection(firestore, 'users', user.uid, 'financialSimulations');
+        
+        addDocumentNonBlocking(simulationsCollectionRef, {
+            userId: user.uid,
+            inputs: data,
+            results: { ...simulationResult, aiInsight: insight },
+            timestamp: Timestamp.now(),
+        });
+
         setSimulationCount(prev => prev + 1);
         toast({
             title: "Simulation Saved",
             description: "Your simulation has been saved to your history.",
         });
 
-    } catch (e) {
+    } catch (e: any) {
+        console.error(e);
         toast({
             variant: "destructive",
             title: "AI Insight Failed",
-            description: "Could not generate AI insight or save simulation.",
+            description: e.message || "Could not generate AI insight or save simulation.",
         });
     } finally {
         setIsAiLoading(false);
     }
-  }, [user, toast]);
+  }, [user, toast, firestore]);
   
   useEffect(() => {
     if (!authLoading && !user) {
@@ -148,9 +158,11 @@ export default function DashboardPage() {
   }, [user, authLoading, router]);
 
   useEffect(() => {
+    if (user) {
       runSimulation(form.getValues());
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [user]);
 
   if (authLoading || !user) {
     return (
