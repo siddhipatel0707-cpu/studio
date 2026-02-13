@@ -184,13 +184,6 @@ export default function DashboardPage() {
     }
   }, [user, authLoading, router]);
 
-  useEffect(() => {
-    if (user) {
-      runSimulation(form.getValues());
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
-
   if (authLoading || !user) {
     return (
       <div className="flex h-[calc(100vh-80px)] w-full items-center justify-center">
