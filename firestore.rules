@@ -122,8 +122,10 @@ service cloud.firestore {
     match /experts/{expertId} {
       // Anyone can read the list of experts.
       allow get, list: if true;
-      // Writing is disabled for clients; this should be managed by an admin/backend process.
-      allow write, update, delete: if false;
+      // Allow signed-in users to create experts (for the one-time data seeding).
+      allow create: if isSignedIn();
+      // Other writes are disabled for clients; this should be managed by an admin/backend process.
+      allow update, delete: if false;
     }
   }
 }
