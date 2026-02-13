@@ -29,7 +29,7 @@ export function SummaryCard({ title, value, description, icon: Icon, isLoading =
     }
     
     return (
-        <Card>
+        <Card className="transition-all duration-200 hover:scale-[1.03] hover:shadow-lg">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">{title}</CardTitle>
                 <Icon className="h-4 w-4 text-muted-foreground" />

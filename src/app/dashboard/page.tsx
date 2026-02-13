@@ -54,9 +54,9 @@ export default function DashboardPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg">
+          <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg bg-card hover:bg-muted/30 hover:border-primary transition-colors duration-300">
             <LineChart className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-xl font-semibold">Ready to run the numbers?</h3>
+            <h3 className="text-xl font-semibold font-headline">Ready to run the numbers?</h3>
             <p className="text-muted-foreground mt-2 max-w-md">
               Use our powerful simulation tools to see how different financial decisions could impact your future.
             </p>
