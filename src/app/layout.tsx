@@ -4,7 +4,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase';
 
 export const metadata: Metadata = {
-  title: 'ClarityFinance',
+  title: 'FutureWise Analyzer',
   description: 'See how today’s decisions affect your retirement.',
 };
 

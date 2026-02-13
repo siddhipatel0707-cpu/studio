@@ -76,9 +76,9 @@ export default function LoginPage() {
   }
 
   return (
-    <Card>
+    <Card className="rounded-2xl">
       <CardHeader>
-        <CardTitle className="font-headline text-2xl">Login</CardTitle>
+        <CardTitle className="font-headline text-3xl">Welcome Back</CardTitle>
         <CardDescription>Enter your email below to login to your account.</CardDescription>
       </CardHeader>
       <Form {...form}>
@@ -112,7 +112,7 @@ export default function LoginPage() {
             />
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button type="submit" className="w-full transition-transform duration-300 ease-in-out hover:scale-105" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Login
             </Button>

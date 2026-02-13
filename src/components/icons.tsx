@@ -11,8 +11,9 @@ export const Logo = (props: LucideProps) => (
     strokeLinejoin="round"
     {...props}
   >
-    <rect width="18" height="18" x="3" y="3" rx="2"></rect>
-    <path d="M3 12h18"></path>
-    <path d="M9 3v9"></path>
+    <path d="M3 3v18h18" />
+    <path d="M7 16.5A4.5 4.5 0 0 1 11.5 12A4.5 4.5 0 0 1 16 7.5" />
+    <path d="M19 4.5h-3v3" />
+    <path d="m11.5 7.5.5-2.5-2.5.5" />
   </svg>
 );

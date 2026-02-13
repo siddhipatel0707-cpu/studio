@@ -9,16 +9,15 @@ interface RetirementChartProps {
 }
 
 const formatCurrency = (value: number) => {
-    if (value > 10000000) return `₹${(value / 10000000).toFixed(2)} Cr`;
-    if (value > 100000) return `₹${(value / 100000).toFixed(2)} L`;
-    if (value > 1000) return `₹${(value / 1000).toFixed(1)} K`;
+    if (value >= 10000000) return `₹${(value / 10000000).toFixed(2)} Cr`;
+    if (value >= 100000) return `₹${(value / 100000).toFixed(2)} L`;
+    if (value >= 1000) return `₹${(value / 1000).toFixed(1)} K`;
     return `₹${value.toFixed(0)}`;
 };
 
-
 export function RetirementChart({ data, isLoading }: RetirementChartProps) {
     if (isLoading) {
-        return <Skeleton className="h-[400px] w-full" />;
+        return <Skeleton className="h-[400px] w-full rounded-2xl" />;
     }
 
   return (
@@ -28,11 +27,11 @@ export function RetirementChart({ data, isLoading }: RetirementChartProps) {
           <defs>
             <linearGradient id="colorBefore" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
-              <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+              <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.1}/>
             </linearGradient>
             <linearGradient id="colorAfter" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="hsl(var(--destructive))" stopOpacity={0.8}/>
-              <stop offset="95%" stopColor="hsl(var(--destructive))" stopOpacity={0}/>
+              <stop offset="5%" stopColor="hsl(var(--accent))" stopOpacity={0.7}/>
+              <stop offset="95%" stopColor="hsl(var(--accent))" stopOpacity={0.1}/>
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -41,15 +40,16 @@ export function RetirementChart({ data, isLoading }: RetirementChartProps) {
           <Tooltip 
             contentStyle={{
                 backgroundColor: 'hsl(var(--background))',
-                borderColor: 'hsl(var(--border))'
+                borderColor: 'hsl(var(--border))',
+                borderRadius: 'var(--radius)'
             }}
-            labelStyle={{ color: 'hsl(var(--foreground))' }}
+            labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 'bold' }}
             formatter={(value: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value)}
             labelFormatter={(label) => `Age: ${label}`}
           />
-          <Legend />
-          <Area type="monotone" dataKey="Before Decision" stroke="hsl(var(--primary))" fill="url(#colorBefore)" strokeWidth={2} />
-          <Area type="monotone" dataKey="After Decision" stroke="hsl(var(--destructive))" fill="url(#colorAfter)" strokeWidth={2} />
+          <Legend wrapperStyle={{paddingTop: '20px'}}/>
+          <Area type="monotone" dataKey="Before Decision" stroke="hsl(var(--primary))" fill="url(#colorBefore)" strokeWidth={2.5} />
+          <Area type="monotone" dataKey="After Decision" stroke="hsl(var(--accent))" fill="url(#colorAfter)" strokeWidth={2.5} />
         </AreaChart>
       </ResponsiveContainer>
     </div>

@@ -50,7 +50,6 @@ export default function SimulationPage() {
   const [result, setResult] = useState<SimulationResult | null>(null);
   const [isSimulating, setIsSimulating] = useState(false);
   const [simulationCount, setSimulationCount] = useState(0);
-  const isRunningRef = useRef(false);
 
   const form = useForm<SimulationInput>({
     resolver: zodResolver(formSchema),
@@ -59,10 +58,12 @@ export default function SimulationPage() {
   
   useEffect(() => {
     // When the component unmounts, update the shared context with the current form values.
-    return () => {
-        setSimulationInput(form.getValues());
-    }
+    const subscription = form.watch((value) => {
+        setSimulationInput(value as SimulationInput);
+    });
+    return () => subscription.unsubscribe();
   }, [form, setSimulationInput]);
+
 
   // If the context is updated from elsewhere (e.g. loading a past sim), reset the form
   useEffect(() => {
@@ -79,8 +80,6 @@ export default function SimulationPage() {
   }, [user, authLoading, router]);
 
   const runSimulation = useCallback(async (data: SimulationInput) => {
-    if (isRunningRef.current) return;
-    isRunningRef.current = true;
     setIsSimulating(true);
     setResult(null); 
 
@@ -175,11 +174,12 @@ export default function SimulationPage() {
                 inputs: data,
                 results: finalResult,
                 timestamp: Timestamp.now(),
-            });
-            setSimulationCount(prev => prev + 1);
-            toast({
-                title: "Simulation Saved",
-                description: "Your simulation has been saved to your history.",
+            }).then(() => {
+                setSimulationCount(prev => prev + 1);
+                toast({
+                    title: "Simulation Saved",
+                    description: "Your simulation has been saved to your history.",
+                });
             });
         }
 
@@ -192,7 +192,6 @@ export default function SimulationPage() {
         });
     } finally {
         setIsSimulating(false);
-        isRunningRef.current = false;
     }
   }, [user, toast, firestore]);
 
@@ -201,26 +200,26 @@ export default function SimulationPage() {
   };
   
   const handleLoadSimulation = (data: SimulationInput) => {
-    setSimulationInput(data);
+    form.reset(data);
     setResult(null); // Clear previous results when loading a new simulation
-    toast({ title: "Simulation Loaded", description: "The financial profile has been updated. Click Simulate to run." });
+    toast({ title: "Simulation Loaded", description: "The financial profile has been updated. Click 'Run Simulation' to see the results." });
   };
 
   if (authLoading || !user || isContextLoading) {
     return (
       <div className="flex h-[calc(100vh-80px)] w-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-            <div className="space-y-8">
+    <div className="space-y-8">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-5">
+            <div className="lg:col-span-2 space-y-8">
                 <FinancialInputForm form={form} onSubmit={handleRunSimulation} isSimulating={isSimulating} />
             </div>
-            <div className="space-y-8">
+            <div className="lg:col-span-3 space-y-8">
                 <Tabs defaultValue="results" className="w-full">
                     <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger value="results">Simulation Results</TabsTrigger>

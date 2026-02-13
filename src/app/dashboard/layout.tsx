@@ -14,11 +14,11 @@ import {
 } from '@/components/ui/sidebar';
 import {
   LayoutGrid,
-  Wallet,
   LineChart,
-  CheckSquare,
   MessageSquare,
   LogOut,
+  ShieldCheck,
+  Menu,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -30,7 +30,9 @@ import { Logo } from '@/components/icons';
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import type { SimulationInput, StoredSimulation } from '@/lib/types';
 import { collection, query, orderBy, limit } from 'firebase/firestore';
-
+import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 // --- Start of Context Logic ---
 
@@ -43,16 +45,16 @@ interface SimulationContextType {
 const SimulationContext = createContext<SimulationContextType | undefined>(undefined);
 
 const defaultSimulationValues: SimulationInput = {
-  monthlyIncome: 50000,
-  existingEmis: 5000,
-  currentMonthlySavings: 15000,
-  currentSavingsCorpus: 500000,
-  currentAge: 30,
-  targetRetirementAge: 60,
+  monthlyIncome: 75000,
+  existingEmis: 10000,
+  currentMonthlySavings: 20000,
+  currentSavingsCorpus: 1000000,
+  currentAge: 32,
+  targetRetirementAge: 62,
   expectedAnnualReturn: 12,
   decisionType: 'Loan',
   decisionName: "New Car",
-  plannedAmount: 10000,
+  plannedAmount: 15000,
   loanDurationYears: 5,
 };
 
@@ -127,7 +129,7 @@ export default function DashboardLayout({
     const menuItems = [
         { href: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
         { href: '/dashboard/simulation', label: 'Simulation', icon: LineChart },
-        { href: '/dashboard/truth-mode', label: 'Truth Mode', icon: CheckSquare },
+        { href: '/dashboard/truth-mode', label: 'Truth Mode', icon: ShieldCheck },
         { href: '/dashboard/expert-help', label: 'Expert Help', icon: MessageSquare },
     ];
     
@@ -140,9 +142,9 @@ export default function DashboardLayout({
                 <Sidebar>
                     <SidebarHeader>
                         <div className="flex items-center gap-2 p-2">
-                            <Logo className="h-8 w-8 text-primary" />
-                            <span className="font-headline text-xl font-semibold">
-                                ClarityFinance
+                            <Logo className="h-10 w-10 text-primary" />
+                            <span className="font-headline text-2xl font-semibold">
+                                FutureWise
                             </span>
                         </div>
                     </SidebarHeader>
@@ -161,7 +163,7 @@ export default function DashboardLayout({
                         </SidebarMenu>
                     </SidebarContent>
                     <SidebarFooter>
-                      <div className="flex items-center gap-3 p-2">
+                      <div className="flex items-center gap-3 p-3">
                         <Avatar className="h-10 w-10">
                             <AvatarImage src={user?.photoURL || undefined} alt={user?.displayName || "User"} />
                             <AvatarFallback>{userInitial}</AvatarFallback>
@@ -170,18 +172,26 @@ export default function DashboardLayout({
                             <span className="truncate text-sm font-semibold text-sidebar-foreground">{user?.displayName || 'User'}</span>
                             <span className="truncate text-xs text-muted-foreground">{user?.email}</span>
                         </div>
-                         <Button variant="ghost" size="icon" className="ml-auto text-sidebar-foreground" onClick={handleLogout}>
+                         <Button variant="ghost" size="icon" className="ml-auto text-sidebar-foreground/70 hover:text-sidebar-foreground" onClick={handleLogout} tooltip="Log Out">
                             <LogOut className="h-5 w-5" />
                         </Button>
                       </div>
                     </SidebarFooter>
                 </Sidebar>
                 <SidebarInset>
-                    <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6 md:px-8">
-                        <SidebarTrigger className="md:hidden"/>
-                        <h1 className="text-2xl font-bold capitalize">{pageTitle}</h1>
+                    <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6 md:h-20 md:px-8">
+                        <SidebarTrigger className="md:hidden">
+                            <Menu />
+                        </SidebarTrigger>
+                        <h1 className="font-headline text-2xl font-bold capitalize tracking-tight">{pageTitle}</h1>
+                        <div className="ml-auto flex items-center gap-4">
+                            <div className="flex items-center space-x-2">
+                                <Switch id="dark-mode-toggle" disabled />
+                                <Label htmlFor="dark-mode-toggle" className="text-sm text-muted-foreground">Dark Mode</Label>
+                            </div>
+                        </div>
                     </header>
-                    <main className="flex-1 p-4 sm:p-6 md:p-8">{children}</main>
+                    <main className="flex-1 p-6 sm:p-8 md:p-10">{children}</main>
                 </SidebarInset>
             </SimulationProvider>
         </SidebarProvider>

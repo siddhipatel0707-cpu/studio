@@ -22,7 +22,7 @@ export default function ExpertHelpPage() {
   if (isLoading) {
     return (
       <div className="flex h-[calc(100vh-80px)] w-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
   }
@@ -38,10 +38,10 @@ export default function ExpertHelpPage() {
   }
 
   return (
-    <div>
+    <div className="space-y-8">
        <SeedExperts />
-      <div className="mb-8 text-center">
-        <h1 className="text-4xl font-bold tracking-tight">Expert Help</h1>
+      <div className="text-center">
+        <h1 className="font-headline text-4xl font-bold tracking-tight">Expert Help</h1>
         <p className="mt-2 text-lg text-muted-foreground">
           Connect with our team of financial experts for personalized guidance.
         </p>

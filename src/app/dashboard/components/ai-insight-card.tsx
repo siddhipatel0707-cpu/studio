@@ -11,22 +11,22 @@ interface AIInsightCardProps {
 
 export function AIInsightCard({ insight, isLoading }: AIInsightCardProps) {
   return (
-    <Card>
+    <Card className="rounded-2xl bg-gradient-to-br from-primary/90 to-primary text-primary-foreground">
       <CardHeader>
-        <CardTitle className="font-headline flex items-center gap-2">
-            <Sparkles className="h-6 w-6 text-primary" />
+        <CardTitle className="font-headline flex items-center gap-2 text-2xl">
+            <Sparkles className="h-6 w-6 text-gold" />
             AI Financial Insight
         </CardTitle>
       </CardHeader>
       <CardContent>
         {isLoading ? (
           <div className="space-y-2">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-4 w-full bg-white/30" />
+            <Skeleton className="h-4 w-full bg-white/30" />
+            <Skeleton className="h-4 w-3/4 bg-white/30" />
           </div>
         ) : (
-          <p className="whitespace-pre-wrap text-muted-foreground">{insight}</p>
+          <p className="whitespace-pre-wrap text-primary-foreground/90">{insight}</p>
         )}
       </CardContent>
     </Card>

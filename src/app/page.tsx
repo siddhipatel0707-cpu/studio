@@ -21,7 +21,7 @@ export default function Home() {
   if (isUserLoading || (!isUserLoading && user)) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-background">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     );
   }
@@ -30,19 +30,19 @@ export default function Home() {
     <div className="flex h-screen w-full flex-col items-center justify-center bg-background p-4">
       <div className="flex flex-col items-center space-y-6 text-center">
         <div className="flex items-center gap-3">
-            <Logo className="h-12 w-12 text-primary" />
-            <h1 className="font-headline text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-                FutureWise Analyzer
+            <Logo className="h-16 w-16 text-primary" />
+            <h1 className="font-headline text-5xl font-bold tracking-tight text-foreground sm:text-6xl">
+                FutureWise
             </h1>
         </div>
-        <p className="max-w-md text-lg text-muted-foreground">
-          See how today’s decisions affect your retirement.
+        <p className="max-w-xl text-lg text-muted-foreground">
+          Gain clarity and confidence in your financial future. See how today’s decisions shape your tomorrow.
         </p>
         <div className="flex space-x-4 pt-4">
-          <Button asChild size="lg">
-            <Link href="/login">Login</Link>
+          <Button asChild size="lg" className="transition-transform duration-300 ease-in-out hover:scale-105">
+            <Link href="/login">Get Started</Link>
           </Button>
-          <Button variant="outline" asChild size="lg">
+          <Button variant="outline" asChild size="lg" className="transition-transform duration-300 ease-in-out hover:scale-105">
             <Link href="/signup">Sign Up</Link>
           </Button>
         </div>

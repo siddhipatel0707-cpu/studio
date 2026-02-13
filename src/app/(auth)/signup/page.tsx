@@ -92,9 +92,9 @@ export default function SignupPage() {
   }
 
   return (
-    <Card>
+    <Card className="rounded-2xl">
       <CardHeader>
-        <CardTitle className="font-headline text-2xl">Create an account</CardTitle>
+        <CardTitle className="font-headline text-3xl">Create an account</CardTitle>
         <CardDescription>Enter your email and password to get started.</CardDescription>
       </CardHeader>
       <Form {...form}>
@@ -141,7 +141,7 @@ export default function SignupPage() {
             />
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button type="submit" className="w-full transition-transform duration-300 ease-in-out hover:scale-105" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Sign Up
             </Button>
