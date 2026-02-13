@@ -14,9 +14,10 @@ interface PastSimulationsProps {
   userId: string;
   onLoad: (data: SimulationInput) => void;
   simulationCount: number;
+  isSimulating: boolean;
 }
 
-export function PastSimulations({ userId, onLoad, simulationCount }: PastSimulationsProps) {
+export function PastSimulations({ userId, onLoad, simulationCount, isSimulating }: PastSimulationsProps) {
   const firestore = useFirestore();
 
   const simulationsQuery = useMemoFirebase(() => {
@@ -60,7 +61,7 @@ export function PastSimulations({ userId, onLoad, simulationCount }: PastSimulat
                       {sim.timestamp ? formatDistanceToNow(sim.timestamp.toDate(), { addSuffix: true }) : 'Recently'}
                     </p>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => onLoad(sim.inputs)}>
+                  <Button variant="outline" size="sm" onClick={() => onLoad(sim.inputs)} disabled={isSimulating}>
                     Re-run
                   </Button>
                 </div>

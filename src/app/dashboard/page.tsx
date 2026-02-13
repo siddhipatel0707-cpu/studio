@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -43,9 +43,9 @@ export default function DashboardPage() {
   const { toast } = useToast();
 
   const [result, setResult] = useState<SimulationResult | null>(null);
-  const [isSimulating, setIsSimulating] = useState(false);
-  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [simulationCount, setSimulationCount] = useState(0);
+  const isRunningRef = useRef(false);
 
   const form = useForm<SimulationInput>({
     resolver: zodResolver(formSchema),
@@ -65,8 +65,10 @@ export default function DashboardPage() {
   });
 
   const runSimulation = useCallback(async (data: SimulationInput) => {
-    setIsSimulating(true);
-    setIsAiLoading(true);
+    if (isRunningRef.current) return;
+
+    isRunningRef.current = true;
+    setIsLoading(true);
 
     try {
         // --- START OF LOCAL CALCULATION ---
@@ -183,8 +185,8 @@ export default function DashboardPage() {
             description: e.message || "Could not generate AI insight or save simulation.",
         });
     } finally {
-        setIsSimulating(false);
-        setIsAiLoading(false);
+        setIsLoading(false);
+        isRunningRef.current = false;
     }
   }, [user, toast, firestore]);
   
@@ -215,12 +217,12 @@ export default function DashboardPage() {
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-5">
       <div className="lg:col-span-2">
         <div className="space-y-8">
-            <FinancialInputForm form={form} onSubmit={handleRunSimulation} isSimulating={isSimulating} />
-            <PastSimulations userId={user.uid} onLoad={loadSimulation} simulationCount={simulationCount} />
+            <FinancialInputForm form={form} onSubmit={handleRunSimulation} isSimulating={isLoading} />
+            <PastSimulations userId={user.uid} onLoad={loadSimulation} simulationCount={simulationCount} isSimulating={isLoading} />
         </div>
       </div>
       <div className="lg:col-span-3">
-        <SimulationResults result={result} isLoading={isSimulating} isAiLoading={isAiLoading} />
+        <SimulationResults result={result} isLoading={isLoading} isAiLoading={isLoading} />
       </div>
     </div>
   );
