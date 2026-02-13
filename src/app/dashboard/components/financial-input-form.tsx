@@ -133,14 +133,14 @@ export function FinancialInputForm({ form, onSubmit, isSimulating }: FinancialIn
                             <FormLabel>Decision Type</FormLabel>
                             <FormControl>
                             <RadioGroup onValueChange={field.onChange} value={field.value} className="flex space-x-4 pt-2">
-                                <FormItem className="flex items-center space-x-2 space-y-0">
-                                <FormControl><RadioGroupItem value="Loan" /></FormControl>
-                                <FormLabel className="font-normal">Loan / New EMI</FormLabel>
-                                </FormItem>
-                                <FormItem className="flex items-center space-x-2 space-y-0">
-                                <FormControl><RadioGroupItem value="Purchase" /></FormControl>
-                                <FormLabel className="font-normal">One-time Purchase</FormLabel>
-                                </FormItem>
+                                <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="Loan" id="decision-loan" />
+                                    <Label htmlFor="decision-loan" className="font-normal">Loan / New EMI</Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="Purchase" id="decision-purchase" />
+                                    <Label htmlFor="decision-purchase" className="font-normal">One-time Purchase</Label>
+                                </div>
                             </RadioGroup>
                             </FormControl>
                             <FormMessage />
