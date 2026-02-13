@@ -1,72 +1,20 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { useUser, useFirestore, useCollection, useMemoFirebase, addDocumentNonBlocking } from "@/firebase";
+import { useEffect } from "react";
+import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { useRouter } from "next/navigation";
-import { Loader2, Landmark, Wallet, HeartPulse } from "lucide-react";
+import { Loader2, Landmark, Wallet, HeartPulse, LineChart } from "lucide-react";
 import { SummaryCard } from "./components/summary-card";
-import { FinancialInputForm } from "./components/financial-input-form";
-import { SimulationResults } from "./components/simulation-results";
-import { PastSimulations } from "./components/past-simulations";
-import type { SimulationInput, StoredSimulation, SimulationResult } from "@/lib/types";
-import { collection, query, orderBy, limit, Timestamp } from "firebase/firestore";
-import { useToast } from "@/hooks/use-toast";
-import { calculateRetirement, calculateRetirementDelay, calculateStress } from "@/lib/finance-utils";
-import { getAIFinancialInsight } from "@/ai/flows/ai-financial-insight";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-
-const formSchema = z.object({
-  monthlyIncome: z.coerce.number().min(0, "Monthly income must be positive."),
-  existingEmis: z.coerce.number().min(0, "Existing EMIs must be positive."),
-  currentMonthlySavings: z.coerce.number().min(0, "Monthly savings must be positive."),
-  currentSavingsCorpus: z.coerce.number().min(0, "Savings corpus must be positive."),
-  currentAge: z.coerce.number().min(18, "Age must be at least 18.").max(100),
-  targetRetirementAge: z.coerce.number().min(18, "Retirement age must be at least 18.").max(100),
-  expectedAnnualReturn: z.coerce.number().min(0, "Return must be positive.").max(100),
-  decisionType: z.enum(['Loan', 'Purchase']),
-  decisionName: z.string().min(1, "Please enter a name for your decision."),
-  plannedAmount: z.coerce.number().min(1, "Amount must be positive."),
-  loanDurationYears: z.coerce.number().min(0, "Duration must be positive."),
-}).refine(data => data.targetRetirementAge > data.currentAge, {
-  message: "Retirement age must be greater than current age.",
-  path: ["targetRetirementAge"],
-}).refine(data => data.decisionType !== 'Loan' || data.loanDurationYears > 0, {
-    message: "Loan duration must be greater than 0 for a loan.",
-    path: ["loanDurationYears"],
-});
-
+import type { StoredSimulation } from "@/lib/types";
+import { collection, query, orderBy, limit } from "firebase/firestore";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 export default function DashboardPage() {
   const { user, isUserLoading: authLoading } = useUser();
   const firestore = useFirestore();
   const router = useRouter();
-  const { toast } = useToast();
-
-  const [result, setResult] = useState<SimulationResult | null>(null);
-  const [isSimulating, setIsSimulating] = useState(false);
-  const [simulationCount, setSimulationCount] = useState(0);
-  const isRunningRef = useRef(false);
-
-  const form = useForm<SimulationInput>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      monthlyIncome: 50000,
-      existingEmis: 5000,
-      currentMonthlySavings: 15000,
-      currentSavingsCorpus: 500000,
-      currentAge: 30,
-      targetRetirementAge: 60,
-      expectedAnnualReturn: 12,
-      decisionType: 'Loan',
-      decisionName: "New Car",
-      plannedAmount: 10000,
-      loanDurationYears: 5,
-    },
-  });
 
   const latestSimQuery = useMemoFirebase(() => {
     if (!user) return null;
@@ -78,152 +26,22 @@ export default function DashboardPage() {
   }, [firestore, user]);
 
   const { data: latestSimulations, isLoading: isSimLoading } = useCollection<StoredSimulation>(latestSimQuery);
-  const latestSimData = latestSimulations?.[0]?.inputs;
-
-  // Populate form with latest sim data on initial load
-  useEffect(() => {
-      if (latestSimData) {
-          form.reset(latestSimData);
-      }
-  }, [latestSimData, form.reset]);
-
+  
   useEffect(() => {
     if (!authLoading && !user) {
       router.replace("/");
     }
   }, [user, authLoading, router]);
-
-
-  const savingsHealth = (form.watch('currentSavingsCorpus') && form.watch('monthlyIncome')) ? (form.watch('currentSavingsCorpus') / form.watch('monthlyIncome')) : 0;
-  const savingsHealthDescription = savingsHealth < 3 ? "Below recommended 3-6 months cover" : savingsHealth > 6 ? "Above recommended 3-6 months cover" : "Within recommended 3-6 months cover";
-
-  const runSimulation = useCallback(async (data: SimulationInput) => {
-    if (isRunningRef.current) return;
-    isRunningRef.current = true;
-    setIsSimulating(true);
-    setResult(null); 
-
-    try {
-        const plannedEmiForStress = data.decisionType === 'Loan' ? data.plannedAmount : 0;
-        const stressResult = calculateStress(data.monthlyIncome, data.existingEmis, plannedEmiForStress);
-
-        const { corpus: corpusBefore } = calculateRetirement(
-          data.currentSavingsCorpus,
-          data.currentMonthlySavings,
-          data.expectedAnnualReturn,
-          data.currentAge,
-          data.targetRetirementAge
-        );
-
-        let corpusAfter, monthlyGrowthData;
-
-        if (data.decisionType === 'Loan') {
-            const newMonthlySavings = data.currentMonthlySavings - data.plannedAmount;
-            const { corpus, monthlyGrowthData: growthData } = calculateRetirement(
-                data.currentSavingsCorpus,
-                newMonthlySavings > 0 ? newMonthlySavings : 0,
-                data.expectedAnnualReturn,
-                data.currentAge,
-                data.targetRetirementAge,
-                true
-            );
-            corpusAfter = corpus;
-            monthlyGrowthData = growthData;
-        } else { // Purchase
-            const newCorpus = data.currentSavingsCorpus - data.plannedAmount;
-            const { corpus, monthlyGrowthData: growthData } = calculateRetirement(
-                newCorpus,
-                data.currentMonthlySavings,
-                data.expectedAnnualReturn,
-                data.currentAge,
-                data.targetRetirementAge,
-                true
-            );
-            corpusAfter = corpus;
-            monthlyGrowthData = growthData;
-        }
-
-        const retirementDelay = calculateRetirementDelay({
-          originalCorpus: corpusBefore,
-          newMonthlySavings: data.decisionType === 'Loan' ? data.currentMonthlySavings - data.plannedAmount : data.currentMonthlySavings,
-          annualRate: data.expectedAnnualReturn,
-          currentCorpus: data.decisionType === 'Purchase' ? data.currentSavingsCorpus - data.plannedAmount : data.currentSavingsCorpus,
-          currentAge: data.targetRetirementAge,
-          originalRetirementAge: data.targetRetirementAge
-        });
-
-        const chartData = monthlyGrowthData?.map(item => {
-            const age = data.currentAge + item.month / 12;
-            const beforeDecisionCorpus = calculateRetirement(data.currentSavingsCorpus, data.currentMonthlySavings, data.expectedAnnualReturn, data.currentAge, age).corpus;
-            return {
-                age: Math.floor(age),
-                "Before Decision": beforeDecisionCorpus,
-                "After Decision": item.corpus,
-            }
-        }).filter((_, i) => i % 12 === 0);
-
-        const simulationResult: SimulationResult = {
-          stress: stressResult,
-          corpusBefore,
-          corpusAfter,
-          retirementDelay,
-          chartData: chartData || [],
-          aiInsight: "",
-        };
-        setResult(simulationResult);
-        
-        if (!user) throw new Error("User not found for AI Insight");
-
-        const aiInput = {
-            income: data.monthlyIncome,
-            totalEmiAfterDecision: data.existingEmis + plannedEmiForStress,
-            stressRatio: stressResult.ratio,
-            retirementCorpusBefore: corpusBefore,
-            retirementCorpusAfter: corpusAfter,
-            retirementDelay: retirementDelay,
-        };
-        const insight = await getAIFinancialInsight(aiInput);
-        
-        setResult(prev => {
-            const newResult = prev ? { ...prev, aiInsight: insight } : null;
-            if (newResult && user) {
-                const simulationsCollectionRef = collection(firestore, 'users', user.uid, 'financialSimulations');
-                addDocumentNonBlocking(simulationsCollectionRef, {
-                    userId: user.uid,
-                    inputs: data,
-                    results: newResult,
-                    timestamp: Timestamp.now(),
-                });
-                setSimulationCount(prev => prev + 1);
-                toast({
-                    title: "Simulation Saved",
-                    description: "Your simulation has been saved to your history.",
-                });
-            }
-            return newResult;
-        });
-
-    } catch (e: any) {
-        console.error(e);
-        toast({
-            variant: "destructive",
-            title: "Simulation Failed",
-            description: e.message || "Could not run simulation or generate AI insight.",
-        });
-    } finally {
-        setIsSimulating(false);
-        isRunningRef.current = false;
-    }
-  }, [user, toast, firestore]);
-
-  const handleRunSimulation = (data: SimulationInput) => {
-    runSimulation(data);
-  };
   
-  const loadSimulation = (data: SimulationInput) => {
-    form.reset(data);
-    runSimulation(data);
-  };
+  const latestSimInputs = latestSimulations?.[0]?.inputs;
+  const monthlyIncome = latestSimInputs?.monthlyIncome || 0;
+  const existingEmis = latestSimInputs?.existingEmis || 0;
+  const currentSavingsCorpus = latestSimInputs?.currentSavingsCorpus || 0;
+
+  const savingsHealth = monthlyIncome > 0 ? (currentSavingsCorpus / monthlyIncome) : 0;
+  const savingsHealthDescription = latestSimulations ? 
+    (savingsHealth < 3 ? "Below recommended 3-6 months cover" : savingsHealth > 6 ? "Above recommended 3-6 months cover" : "Within recommended 3-6 months cover")
+    : "Run a simulation to see your savings health.";
 
   if (authLoading || !user) {
     return (
@@ -235,31 +53,32 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-             <SummaryCard isLoading={authLoading || isSimLoading} title="Monthly Income" value={`₹${(form.watch('monthlyIncome') || 0).toLocaleString('en-IN')}`} description="Your current monthly income." icon={Landmark} />
-             <SummaryCard isLoading={authLoading || isSimLoading} title="Total Monthly EMI" value={`₹${(form.watch('existingEmis') || 0).toLocaleString('en-IN')}`} description="Your current total EMIs." icon={Wallet} />
-             <SummaryCard isLoading={authLoading || isSimLoading} title="Savings Health" value={`${savingsHealth.toFixed(1)} months`} description={savingsHealthDescription} icon={HeartPulse} />
-        </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <SummaryCard isLoading={isSimLoading} title="Monthly Income" value={`₹${monthlyIncome.toLocaleString('en-IN')}`} description="From your latest simulation." icon={Landmark} />
+        <SummaryCard isLoading={isSimLoading} title="Total Monthly EMI" value={`₹${existingEmis.toLocaleString('en-IN')}`} description="From your latest simulation." icon={Wallet} />
+        <SummaryCard isLoading={isSimLoading} title="Savings Health" value={`${savingsHealth.toFixed(1)} months`} description={savingsHealthDescription} icon={HeartPulse} />
+      </div>
 
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-            <div className="space-y-8">
-                <FinancialInputForm form={form} onSubmit={handleRunSimulation} isSimulating={isSimulating} />
-            </div>
-            <div className="space-y-8">
-                <Tabs defaultValue="results" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="results">Simulation Results</TabsTrigger>
-                        <TabsTrigger value="history">Simulation History</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="results" className="mt-4">
-                        <SimulationResults result={result} isLoading={isSimulating && !result} />
-                    </TabsContent>
-                    <TabsContent value="history" className="mt-4">
-                        <PastSimulations userId={user.uid} onLoad={loadSimulation} simulationCount={simulationCount} isSimulating={isSimulating} />
-                    </TabsContent>
-                </Tabs>
-            </div>
-        </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Welcome to Your Financial Dashboard</CardTitle>
+          <CardDescription>
+            Here's a snapshot of your financial health based on your latest simulation. To explore new scenarios or see detailed projections, head over to the simulation tools.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg">
+            <LineChart className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-xl font-semibold">Ready to run the numbers?</h3>
+            <p className="text-muted-foreground mt-2 max-w-md">
+              Use our powerful simulation tools to see how different financial decisions could impact your future.
+            </p>
+            <Button asChild className="mt-6">
+              <Link href="/dashboard/simulation">Go to Simulation Tools</Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
