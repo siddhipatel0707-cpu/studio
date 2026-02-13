@@ -12,12 +12,12 @@ import { formatDistanceToNow } from 'date-fns';
 
 interface PastSimulationsProps {
   userId: string;
-  onRerun: (data: SimulationInput) => void;
+  onLoad: (data: SimulationInput) => void;
   simulationCount: number;
   isSimulating: boolean;
 }
 
-export function PastSimulations({ userId, onRerun, simulationCount, isSimulating }: PastSimulationsProps) {
+export function PastSimulations({ userId, onLoad, simulationCount, isSimulating }: PastSimulationsProps) {
   const firestore = useFirestore();
 
   const simulationsQuery = useMemoFirebase(() => {
@@ -35,7 +35,7 @@ export function PastSimulations({ userId, onRerun, simulationCount, isSimulating
     <Card>
       <CardHeader>
         <CardTitle className="font-headline">Simulation History</CardTitle>
-        <CardDescription>Review and re-run your past simulations.</CardDescription>
+        <CardDescription>Review and load your past simulations.</CardDescription>
       </CardHeader>
       <CardContent>
         <ScrollArea className="h-72">
@@ -61,8 +61,8 @@ export function PastSimulations({ userId, onRerun, simulationCount, isSimulating
                       {sim.timestamp ? formatDistanceToNow(sim.timestamp.toDate(), { addSuffix: true }) : 'Recently'}
                     </p>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => onRerun(sim.inputs)} disabled={isSimulating}>
-                    Re-run
+                  <Button variant="outline" size="sm" onClick={() => onLoad(sim.inputs)} disabled={isSimulating}>
+                    Load
                   </Button>
                 </div>
               ))}

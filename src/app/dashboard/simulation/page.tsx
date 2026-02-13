@@ -216,9 +216,10 @@ export default function SimulationPage() {
     runSimulation(data);
   };
   
-  const handleRerun = (data: SimulationInput) => {
-    // Only run the simulation, don't reset the form
-    runSimulation(data);
+  const handleLoadSimulation = (data: SimulationInput) => {
+    form.reset(data);
+    setResult(null); // Clear previous results when loading a new simulation
+    toast({ title: "Simulation Loaded", description: "The financial profile has been updated. Click Simulate to run." });
   };
 
   if (authLoading || !user) {
@@ -245,7 +246,7 @@ export default function SimulationPage() {
                         <SimulationResults result={result} isLoading={isSimulating && !result} />
                     </TabsContent>
                     <TabsContent value="history" className="mt-4">
-                        <PastSimulations userId={user.uid} onRerun={handleRerun} simulationCount={simulationCount} isSimulating={isSimulating} />
+                        <PastSimulations userId={user.uid} onLoad={handleLoadSimulation} simulationCount={simulationCount} isSimulating={isSimulating} />
                     </TabsContent>
                 </Tabs>
             </div>
